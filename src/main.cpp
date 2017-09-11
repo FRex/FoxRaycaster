@@ -15,6 +15,14 @@ int main(int argc, char ** argv)
     if(img.loadFromFile("tex2.png"))
         raycaster.setTexture(2u, img);
 
+    if(img.loadFromFile("map.png"))
+    {
+        raycaster.setMapSize(img.getSize().x, img.getSize().y);
+        for(unsigned x = 0u; x < img.getSize().x; ++x)
+            for(unsigned y = 0u; y < img.getSize().y; ++y)
+                raycaster.setMapTile(x,y, img.getPixel(x, y) != sf::Color::Black);
+    }
+
     sf::Texture tex;
     while(app.isOpen())
     {
