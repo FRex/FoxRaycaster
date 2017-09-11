@@ -30,37 +30,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace fox {
 
-const int kMapWidth = 24;
-const int kMapHeight = 24;
-
-const int worldMap[kMapWidth][kMapHeight] =
-{
-    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,0,0,0,0,0,1,1,1,1,1,0,0,0,0,1,0,1,0,1,0,0,0,1 },
-    { 1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,1 },
-    { 1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,0,0,0,0,0,1,1,0,1,1,0,0,0,0,1,0,1,0,1,0,0,0,1 },
-    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,1,0,0,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,1,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }
-};
-
 const unsigned kTextureSize = 64u;
 const unsigned kTexturePixels = kTextureSize * kTextureSize;
 
@@ -90,6 +59,7 @@ inline unsigned complementRGB(unsigned color)
 FoxRaycaster::FoxRaycaster()
 {
     setScreenSize(800u, 600u);
+    setMapSize(10u, 10u);
 
     //jorge
     m_textures.assign(kTexturePixels, 0xff);
@@ -185,7 +155,7 @@ void FoxRaycaster::rasterize()
                 side = 1;
             }
             //Check if ray has hit a wall
-            hit = worldMap[mapx][mapy] > 0;
+            hit = getMapTile(mapx, mapy) > 0u;
         }
 
         //Calculate distance projected on camera direction (oblique distance will give fisheye effect!)
@@ -207,7 +177,7 @@ void FoxRaycaster::rasterize()
             drawend = m_screenheight - 1;
 
         //choose wall color
-        if(worldMap[mapx][mapy] > 0)
+        if(getMapTile(mapx, mapy) > 0)
         {
             float wallx;
             if(side == 0)
@@ -228,7 +198,7 @@ void FoxRaycaster::rasterize()
             {
                 const int d = y * 256 - m_screenheight * 128 + lineheight * 128;  //256 and 128 factors to avoid floats
                 const int texy = ((d * kTextureSize) / lineheight) / 256;
-                const unsigned * tex0 = getTexture(worldMap[mapx][mapy]);
+                const unsigned * tex0 = getTexture(getMapTile(mapx, mapy));
 
                 unsigned color = tex0[texturePixelIndex(texx, texy)];
                 if(side == 1)
@@ -324,20 +294,20 @@ void FoxRaycaster::handleKeys()
     //move forward if no wall in front of you
     if(sf::Keyboard::isKeyPressed(sf::Keyboard::W))
     {
-        if(worldMap[int(m_camposx + m_dirx * movespeed)][int(m_camposy)] == false)
+        if(getMapTile(m_camposx + m_dirx * movespeed, m_camposy) == 0)
             m_camposx += m_dirx * movespeed;
 
-        if(worldMap[int(m_camposx)][int(m_camposy + m_diry * movespeed)] == false)
+        if(getMapTile(m_camposx, m_camposy + m_diry * movespeed) == 0)
             m_camposy += m_diry * movespeed;
     }
 
     //move backwards if no wall behind you
     if(sf::Keyboard::isKeyPressed(sf::Keyboard::S))
     {
-        if(worldMap[int(m_camposx - m_dirx * movespeed)][int(m_camposy)] == false)
+        if(getMapTile(m_camposx - m_dirx * movespeed, m_camposy) == 0)
             m_camposx -= m_dirx * movespeed;
 
-        if(worldMap[int(m_camposx)][int(m_camposy - m_diry * movespeed)] == false)
+        if(getMapTile(m_camposx, m_camposy - m_diry * movespeed) == 0)
             m_camposy -= m_diry * movespeed;
     }
 
@@ -391,6 +361,34 @@ void FoxRaycaster::setScreenSize(unsigned width, unsigned height)
     std::printf("%u, %u\n", width, height);
 }
 
+void FoxRaycaster::setMapSize(unsigned width, unsigned height)
+{
+    if(width < 3u || height < 3u)
+        return;
+
+    m_mapwidth = width;
+    m_mapheight = height;
+    m_map.assign(width * height, 0u);
+
+    for(unsigned x = 0; x < width; ++x)
+    {
+        setMapTile(x, 0u, 1u);
+        setMapTile(x, height - 1u, 1u);
+    }
+
+    for(unsigned y = 0; y < height; ++y)
+    {
+        setMapTile(0u, y, 1u);
+        setMapTile(width - 1u, y, 1u);
+    }
+}
+
+void FoxRaycaster::setMapTile(unsigned x, unsigned y, unsigned tile)
+{
+    if(x < m_mapwidth && y < m_mapheight)
+        m_map[x + y * m_mapwidth] = tile;
+}
+
 unsigned * FoxRaycaster::getTexture(unsigned texnum)
 {
     if((texnum * kTexturePixels) < m_textures.size())
@@ -410,7 +408,14 @@ const unsigned * FoxRaycaster::getTexture(unsigned texnum) const
 unsigned FoxRaycaster::screenPixelIndex(unsigned x, unsigned y)
 {
     return x + m_screenwidth * y;
+}
 
+unsigned FoxRaycaster::getMapTile(unsigned x, unsigned y) const
+{
+    if(x < m_mapwidth && y < m_mapheight)
+        return m_map[x + m_mapwidth * y];
+
+    return 1u;
 }
 
 }//fox
