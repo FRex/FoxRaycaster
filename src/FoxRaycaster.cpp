@@ -352,13 +352,14 @@ void FoxRaycaster::setTexture(unsigned texnum, const sf::Image& img)
 
 void FoxRaycaster::setScreenSize(unsigned width, unsigned height)
 {
+    if(m_screenwidth == width && m_screenheight == height)
+        return;
+
     height = height - (height % 2); //only even height allowed
     m_screenwidth = width;
     m_screenheight = height;
     m_screenpixels = width * height;
     m_screen.assign(m_screenpixels, 0x7f7f7fff);
-
-    std::printf("%u, %u\n", width, height);
 }
 
 void FoxRaycaster::setMapSize(unsigned width, unsigned height)
