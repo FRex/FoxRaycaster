@@ -26,12 +26,18 @@ int main(int argc, char ** argv)
             case sf::Event::Closed:
                 app.close();
                 break;
+            case sf::Event::Resized:
+                raycaster.setScreenSize(eve.size.width, eve.size.height);
+                app.setView(sf::View(sf::FloatRect(0.f, 0.f, eve.size.width, eve.size.height)));
+                break;
             }
-        }
+        }//while app poll event eve
 
         app.clear();
         raycaster.handleKeys();
+        sf::Clock clo;
         raycaster.rasterize();
+        std::printf("%ums\n", clo.getElapsedTime().asMilliseconds());
         tex.loadFromImage(raycaster.getImage());
         app.draw(sf::Sprite(tex));
         app.display();

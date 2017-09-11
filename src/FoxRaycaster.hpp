@@ -11,10 +11,12 @@ public:
     const sf::Image& getImage() const;
     void handleKeys();
     void setTexture(unsigned texnum, const sf::Image& img);
+    void setScreenSize(unsigned width, unsigned height);
 
 private:
     unsigned * getTexture(unsigned num);
     const unsigned * getTexture(unsigned num) const;
+    unsigned screenPixelIndex(unsigned x, unsigned y);
 
     float m_camposx = 22.f;
     float m_camposy = 12.f;
@@ -27,6 +29,9 @@ private:
     std::vector<unsigned> m_textures;
     std::vector<sf::Uint8> m_sfbuffer;
     sf::Image m_sfimage;
+    unsigned m_screenwidth;
+    unsigned m_screenheight;
+    unsigned m_screenpixels;
 
 };
 

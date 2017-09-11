@@ -61,21 +61,12 @@ const int worldMap[kMapWidth][kMapHeight] =
     { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }
 };
 
-const unsigned kScreenWidth = 640u;
-const unsigned kScreenHeight = 480u;
-const unsigned kScreenPixels = kScreenWidth * kScreenHeight;
-
 const unsigned kTextureSize = 64u;
 const unsigned kTexturePixels = kTextureSize * kTextureSize;
 
 inline unsigned texturePixelIndex(unsigned x, unsigned y)
 {
     return x + kTextureSize * y;
-}
-
-inline unsigned screenPixelIndex(unsigned x, unsigned y)
-{
-    return x + kScreenWidth * y;
 }
 
 inline unsigned halveRGB(unsigned color)
@@ -98,7 +89,7 @@ inline unsigned complementRGB(unsigned color)
 
 FoxRaycaster::FoxRaycaster()
 {
-    m_screen.assign(kScreenPixels, 0x7f7f7fff);
+    setScreenSize(800u, 600u);
 
     //jorge
     m_textures.assign(kTexturePixels, 0xff);
@@ -126,11 +117,11 @@ FoxRaycaster::FoxRaycaster()
 
 void FoxRaycaster::rasterize()
 {
-    m_screen.assign(kScreenPixels, 0x7f7f7fff);
-    for(int x = 0; x < kScreenWidth; ++x)
+    m_screen.assign(m_screenpixels, 0x7f7f7fff);
+    for(int x = 0; x < m_screenwidth; ++x)
     {
         //calculate ray position and direction
-        const float camerax = 2.f * x / static_cast<float>(kScreenWidth) - 1.f; //x-coordinate in camera space
+        const float camerax = 2.f * x / static_cast<float>(m_screenwidth) - 1.f; //x-coordinate in camera space
         const float rayposx = m_camposx;
         const float rayposy = m_camposy;
         const float raydirx = m_dirx + m_planex * camerax;
@@ -204,16 +195,16 @@ void FoxRaycaster::rasterize()
             perpwalldist = (mapy - rayposy + (1 - stepy) / 2) / raydiry;
 
         //Calculate height of line to draw on screen
-        const int lineheight = static_cast<int>(kScreenHeight / perpwalldist);
+        const int lineheight = static_cast<int>(m_screenheight / perpwalldist);
 
         //calculate lowest and highest pixel to fill in current stripe
-        int drawstart = -lineheight / 2 + kScreenHeight / 2;
+        int drawstart = -lineheight / 2 + m_screenheight / 2;
         if(drawstart < 0)
             drawstart = 0;
 
-        int drawend = lineheight / 2 + kScreenHeight / 2;
-        if(drawend >= kScreenHeight)
-            drawend = kScreenHeight - 1;
+        int drawend = lineheight / 2 + m_screenheight / 2;
+        if(drawend >= m_screenheight)
+            drawend = m_screenheight - 1;
 
         //choose wall color
         if(worldMap[mapx][mapy] > 0)
@@ -235,7 +226,7 @@ void FoxRaycaster::rasterize()
 
             for(int y = drawstart; y < drawend; y++)
             {
-                const int d = y * 256 - kScreenHeight * 128 + lineheight * 128;  //256 and 128 factors to avoid floats
+                const int d = y * 256 - m_screenheight * 128 + lineheight * 128;  //256 and 128 factors to avoid floats
                 const int texy = ((d * kTextureSize) / lineheight) / 256;
                 const unsigned * tex0 = getTexture(worldMap[mapx][mapy]);
 
@@ -276,12 +267,12 @@ void FoxRaycaster::rasterize()
             distplayer = 0.f;
 
             if(drawend < 0)
-                drawend = kScreenHeight; //becomes < 0 when the integer overflows
+                drawend = m_screenheight; //becomes < 0 when the integer overflows
 
             //draw the floor from drawEnd to the bottom of the screen
-            for(int y = drawend + 1; y < kScreenHeight; ++y)
+            for(int y = drawend + 1; y < m_screenheight; ++y)
             {
-                const float currentdist = kScreenHeight / (2.f * y - kScreenHeight); //you could make a small lookup table for this instead
+                const float currentdist = m_screenheight / (2.f * y - m_screenheight); //you could make a small lookup table for this instead
                 const float weight = (currentdist - distplayer) / (distwall - distplayer);
                 const float currentfloorx = weight * floorxwall + (1.f - weight) * m_camposx;
                 const float currentfloory = weight * floorywall + (1.f - weight) * m_camposy;
@@ -298,7 +289,7 @@ void FoxRaycaster::rasterize()
                 //floor
                 m_screen[screenPixelIndex(x, y)] = floortex[texturePixelIndex(floortexx, floortexy)];
                 //ceiling (symmetrical!)
-                m_screen[screenPixelIndex(x, kScreenHeight - y)] = ceiltex[texturePixelIndex(floortexx, floortexy)];
+                m_screen[screenPixelIndex(x, m_screenheight - y)] = ceiltex[texturePixelIndex(floortexx, floortexy)];
             }
 
 
@@ -306,7 +297,7 @@ void FoxRaycaster::rasterize()
     }//for x
 
     //commit to sf image
-    m_sfbuffer.resize(kScreenPixels * 4u);
+    m_sfbuffer.resize(m_screenpixels * 4u);
     for(unsigned i = 0; i < m_screen.size(); ++i)
     {
         m_sfbuffer[i * 4 + 0] = (m_screen[i] >> 24) & 0xff;
@@ -315,7 +306,7 @@ void FoxRaycaster::rasterize()
         m_sfbuffer[i * 4 + 3] = (m_screen[i] >> 0) & 0xff;
     }//for i
 
-    m_sfimage.create(kScreenWidth, kScreenHeight, m_sfbuffer.data());
+    m_sfimage.create(m_screenwidth, m_screenheight, m_sfbuffer.data());
 }
 
 const sf::Image& FoxRaycaster::getImage() const
@@ -389,6 +380,17 @@ void FoxRaycaster::setTexture(unsigned texnum, const sf::Image& img)
             t[texturePixelIndex(x, y)] = img.getPixel(x, y).toInteger();
 }
 
+void FoxRaycaster::setScreenSize(unsigned width, unsigned height)
+{
+    height = height - (height % 2); //only even height allowed
+    m_screenwidth = width;
+    m_screenheight = height;
+    m_screenpixels = width * height;
+    m_screen.assign(m_screenpixels, 0x7f7f7fff);
+
+    std::printf("%u, %u\n", width, height);
+}
+
 unsigned * FoxRaycaster::getTexture(unsigned texnum)
 {
     if((texnum * kTexturePixels) < m_textures.size())
@@ -403,6 +405,12 @@ const unsigned * FoxRaycaster::getTexture(unsigned texnum) const
         return m_textures.data() + texnum * kTexturePixels;
 
     return m_textures.data(); //jorge
+}
+
+unsigned FoxRaycaster::screenPixelIndex(unsigned x, unsigned y)
+{
+    return x + m_screenwidth * y;
+
 }
 
 }//fox
