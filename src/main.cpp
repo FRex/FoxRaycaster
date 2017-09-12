@@ -115,6 +115,9 @@ int main(int argc, char ** argv)
         app.draw(spr);
 
         sf::Text txt(runinfo.toString(), font);
+        txt.setOutlineThickness(1.f);
+        txt.setFillColor(sf::Color::White);
+        txt.setOutlineColor(sf::Color::Black);
         app.draw(txt);
         app.display();
 
