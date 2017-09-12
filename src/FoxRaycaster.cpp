@@ -32,6 +32,7 @@ namespace fox {
 
 const unsigned kTextureSize = 64u;
 const unsigned kTexturePixels = kTextureSize * kTextureSize;
+const float kClearDepth = 0.f;
 
 inline unsigned texturePixelIndex(unsigned x, unsigned y)
 {
@@ -88,6 +89,8 @@ FoxRaycaster::FoxRaycaster()
 void FoxRaycaster::rasterize()
 {
     m_screen.assign(m_screenpixels, 0x7f7f7fff);
+    m_depthbuffer.assign(m_screenpixels, kClearDepth);
+
     for(int x = 0; x < m_screenwidth; ++x)
     {
         //calculate ray position and direction
@@ -205,6 +208,7 @@ void FoxRaycaster::rasterize()
                     color = halveRGB(color);
 
                 m_screen[screenPixelIndex(x, y)] = color;
+                m_depthbuffer[screenPixelIndex(x, y)] = perpwalldist;
             }//for y
 
             //FLOOR CASTING:
@@ -258,8 +262,11 @@ void FoxRaycaster::rasterize()
 
                 //floor
                 m_screen[screenPixelIndex(x, y)] = floortex[texturePixelIndex(floortexx, floortexy)];
+                m_depthbuffer[screenPixelIndex(x, y)] = currentdist;
+
                 //ceiling (symmetrical!)
                 m_screen[screenPixelIndex(x, m_screenheight - y)] = ceiltex[texturePixelIndex(floortexx, floortexy)];
+                m_depthbuffer[screenPixelIndex(x, m_screenheight - y)] = currentdist;
             }
 
 
@@ -277,6 +284,17 @@ void FoxRaycaster::rasterize()
     }//for i
 
     m_sfimage.create(m_screenwidth, m_screenheight, m_sfbuffer.data());
+    std::vector<sf::Uint8> greydepthpixels;
+    const float maxdepth = *std::max_element(m_depthbuffer.begin(), m_depthbuffer.end());
+    for(float f : m_depthbuffer)
+    {
+        const float x = 255.f * (f / maxdepth);
+        greydepthpixels.push_back(x);
+        greydepthpixels.push_back(x);
+        greydepthpixels.push_back(x);
+        greydepthpixels.push_back(255u);
+    }//for each f in m depth buffer
+    m_depthimage.create(m_screenwidth, m_screenheight, greydepthpixels.data());
 }
 
 const sf::Image& FoxRaycaster::getImage() const
@@ -360,6 +378,7 @@ void FoxRaycaster::setScreenSize(unsigned width, unsigned height)
     m_screenheight = height;
     m_screenpixels = width * height;
     m_screen.assign(m_screenpixels, 0x7f7f7fff);
+    m_depthbuffer.assign(m_screenpixels, kClearDepth);
 }
 
 void FoxRaycaster::setMapSize(unsigned width, unsigned height)
@@ -388,6 +407,11 @@ void FoxRaycaster::setMapTile(unsigned x, unsigned y, unsigned tile)
 {
     if(x < m_mapwidth && y < m_mapheight)
         m_map[x + y * m_mapwidth] = tile;
+}
+
+const sf::Image& FoxRaycaster::getDepthImage() const
+{
+    return m_depthimage;
 }
 
 unsigned * FoxRaycaster::getTexture(unsigned texnum)

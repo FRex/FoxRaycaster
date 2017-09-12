@@ -14,6 +14,7 @@ public:
     void setScreenSize(unsigned width, unsigned height);
     void setMapSize(unsigned width, unsigned height);
     void setMapTile(unsigned x, unsigned y, unsigned tile);
+    const sf::Image& getDepthImage() const;
 
 private:
     unsigned * getTexture(unsigned num);
@@ -38,6 +39,8 @@ private:
     std::vector<unsigned> m_map;
     unsigned m_mapwidth;
     unsigned m_mapheight;
+    std::vector<float> m_depthbuffer;
+    sf::Image m_depthimage;
 
 };
 

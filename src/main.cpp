@@ -24,6 +24,7 @@ public:
         ss << "(R) Stretch:    " << stretch << std::endl;
         ss << "(T) Smooth:     " << smooth << std::endl;
         ss << "(Y) Resolution: " << kResolutions[resolution].x << 'x' << kResolutions[resolution].y << std::endl;
+        ss << "(U) Depthdraw:  " << depthdraw << std::endl;
         return ss.str();
     }
 
@@ -31,6 +32,7 @@ public:
     bool stretch = false;
     bool smooth = false;
     unsigned resolution = 0u;
+    bool depthdraw = false;
 
 };
 
@@ -91,15 +93,26 @@ int main(int argc, char ** argv)
                     runinfo.resolution = (runinfo.resolution + 1) % kResolutionsCount;
                     raycaster.setScreenSize(kResolutions[runinfo.resolution].x, kResolutions[runinfo.resolution].y);
                     break;
+                case sf::Keyboard::U:
+                    runinfo.depthdraw = !runinfo.depthdraw;
+                    break;
                 }//switch eve key code
                 break;
             }
         }//while app poll event eve
 
-        app.clear();
+        app.clear(sf::Color(0x2d0022ff));
         raycaster.handleKeys();
         raycaster.rasterize();
-        tex.loadFromImage(raycaster.getImage());
+        if(runinfo.depthdraw)
+        {
+            tex.loadFromImage(raycaster.getDepthImage());
+        }
+        else
+        {
+            tex.loadFromImage(raycaster.getImage());
+        }
+
         sf::Sprite spr(tex);
         tex.setSmooth(runinfo.smooth);
         if(runinfo.stretch)
