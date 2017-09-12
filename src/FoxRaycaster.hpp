@@ -21,6 +21,8 @@ private:
     const unsigned * getTexture(unsigned num) const;
     unsigned screenPixelIndex(unsigned x, unsigned y);
     unsigned getMapTile(unsigned x, unsigned y) const;
+    void rasterizeDepth();
+    void rasterizeDiffuse();
 
     float m_camposx = 4.5f;
     float m_camposy = 4.5f;
