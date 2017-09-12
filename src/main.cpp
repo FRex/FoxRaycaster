@@ -21,9 +21,9 @@ public:
         std::ostringstream ss;
         ss << std::boolalpha;
         ss << "FPS: " << fps << std::endl;
-        ss << "R: Stretch:    " << stretch << std::endl;
-        ss << "T: Smooth:     " << smooth << std::endl;
-        ss << "Y: Resolution: " << kResolutions[resolution].x << 'x' << kResolutions[resolution].y << std::endl;
+        ss << "(R) Stretch:    " << stretch << std::endl;
+        ss << "(T) Smooth:     " << smooth << std::endl;
+        ss << "(Y) Resolution: " << kResolutions[resolution].x << 'x' << kResolutions[resolution].y << std::endl;
         return ss.str();
     }
 
