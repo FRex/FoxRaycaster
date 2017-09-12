@@ -41,6 +41,7 @@ private:
     unsigned m_mapheight;
     std::vector<float> m_depthbuffer;
     sf::Image m_depthimage;
+    std::vector<sf::Uint8> m_greydepthpixels;
 
 };
 

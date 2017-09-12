@@ -277,8 +277,7 @@ void FoxRaycaster::rasterize()
     }//for x
 
     //commit to sf image
-    m_sfbuffer.resize(m_screenpixels * 4u);
-    for(unsigned i = 0; i < m_screen.size(); ++i)
+    for(unsigned i = 0u; i < m_screen.size(); ++i)
     {
         m_sfbuffer[i * 4 + 0] = (m_screen[i] >> 24) & 0xff;
         m_sfbuffer[i * 4 + 1] = (m_screen[i] >> 16) & 0xff;
@@ -287,17 +286,18 @@ void FoxRaycaster::rasterize()
     }//for i
 
     m_sfimage.create(m_screenwidth, m_screenheight, m_sfbuffer.data());
-    std::vector<sf::Uint8> greydepthpixels;
+
+    //commit depth to sf image
     const float maxdepth = *std::max_element(m_depthbuffer.begin(), m_depthbuffer.end());
-    for(float f : m_depthbuffer)
+    for(unsigned i = 0u; i < m_depthbuffer.size(); ++i)
     {
-        const float x = 255.f * (f / maxdepth);
-        greydepthpixels.push_back(x);
-        greydepthpixels.push_back(x);
-        greydepthpixels.push_back(x);
-        greydepthpixels.push_back(255u);
+        const float x = 255.f * (m_depthbuffer[i] / maxdepth);
+        m_greydepthpixels[i * 4 + 0] = x;
+        m_greydepthpixels[i * 4 + 1] = x;
+        m_greydepthpixels[i * 4 + 2] = x;
+        m_greydepthpixels[i * 4 + 3] = 255u;
     }//for each f in m depth buffer
-    m_depthimage.create(m_screenwidth, m_screenheight, greydepthpixels.data());
+    m_depthimage.create(m_screenwidth, m_screenheight, m_greydepthpixels.data());
 }
 
 const sf::Image& FoxRaycaster::getImage() const
@@ -382,6 +382,8 @@ void FoxRaycaster::setScreenSize(unsigned width, unsigned height)
     m_screenpixels = width * height;
     m_screen.assign(m_screenpixels, 0x7f7f7fff);
     m_depthbuffer.assign(m_screenpixels, kClearDepth);
+    m_sfbuffer.resize(m_screenpixels * 4u);
+    m_greydepthpixels.resize(m_screenpixels * 4u);
 }
 
 void FoxRaycaster::setMapSize(unsigned width, unsigned height)
