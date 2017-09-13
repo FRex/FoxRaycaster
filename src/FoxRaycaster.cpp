@@ -1,6 +1,7 @@
 #include "FoxRaycaster.hpp"
 #include <cmath>
 #include <SFML/Window/Keyboard.hpp>
+#include <SFML/System/Clock.hpp>
 
 /*
 Original raycasting code from tutorials at: http://lodev.org/cgtutor/index.html
@@ -33,6 +34,7 @@ namespace fox {
 const unsigned kTextureSize = 64u;
 const unsigned kTexturePixels = kTextureSize * kTextureSize;
 const float kClearDepth = 0.f;
+const float kMinDepth = 0.f;
 
 inline unsigned texturePixelIndex(unsigned x, unsigned y)
 {
@@ -441,6 +443,7 @@ unsigned FoxRaycaster::getMapTile(unsigned x, unsigned y) const
 void FoxRaycaster::rasterizeDepth()
 {
     m_depthbuffer.assign(m_screenpixels, kClearDepth);
+    float maxdepth = kMinDepth;
 
     for(int x = 0; x < m_screenwidth; ++x)
     {
@@ -471,6 +474,7 @@ void FoxRaycaster::rasterizeDepth()
         int hit = 0; //was there a wall hit?
         int side; //was a NS or a EW wall hit?
                   //calculate step and initial sideDist
+
         if(raydirx < 0)
         {
             stepx = -1;
@@ -481,6 +485,7 @@ void FoxRaycaster::rasterizeDepth()
             stepx = 1;
             sidedistx = (mapx + 1.f - rayposx) * deltadistx;
         }
+
         if(raydiry < 0)
         {
             stepy = -1;
@@ -530,6 +535,8 @@ void FoxRaycaster::rasterizeDepth()
         if(drawend >= m_screenheight)
             drawend = m_screenheight - 1;
 
+        maxdepth = std::max(maxdepth, perpwalldist);
+
         //choose wall color
         if(getMapTile(mapx, mapy) > 0)
         {
@@ -539,10 +546,13 @@ void FoxRaycaster::rasterizeDepth()
             if(drawend < 0)
                 drawend = m_screenheight; //becomes < 0 when the integer overflows
 
-                                          //draw the floor from drawEnd to the bottom of the screen
+            //draw the floor from drawEnd to the bottom of the screen
             for(int y = drawend; y < m_screenheight; ++y)
             {
                 const float currentdist = m_screenheight / (2.f * y - m_screenheight); //you could make a small lookup table for this instead
+
+                maxdepth = std::max(maxdepth, currentdist);
+
                 //floor
                 m_depthbuffer[screenPixelIndex(x, y)] = currentdist;
                 if(y == drawend)
@@ -554,8 +564,6 @@ void FoxRaycaster::rasterizeDepth()
         }//if world map > 0
     }//for x
 
-    //commit depth to sf image
-    const float maxdepth = *std::max_element(m_depthbuffer.begin(), m_depthbuffer.end());
     for(unsigned i = 0u; i < m_depthbuffer.size(); ++i)
     {
         const float x = 255.f * (m_depthbuffer[i] / maxdepth);
